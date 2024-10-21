@@ -1,6 +1,6 @@
-const express = require('express');
-const router = express.Router();
+import { Router } from 'express';
 const authController = require('../controllers/auth.controller');
+const router = Router();
 
 // Ruta para registrar un usuario
 router.post('/register', authController.register);
@@ -16,4 +16,4 @@ app.get('/', (req, res) => {
     res.send('auth');
 });
 
-module.exports = router;
+export default router;

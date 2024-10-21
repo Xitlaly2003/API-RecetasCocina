@@ -1,7 +1,6 @@
-// calendar.routes.js
-const express = require('express');
-const router = express.Router();
+import { Router } from 'express';
 const db = require('../models/Db.model');  // Importar la conexión de la base de datos
+const router = Router();
 
 // Obtener eventos del mes actual
 router.get('/events/month', (req, res) => {
@@ -84,4 +83,4 @@ router.delete('/events/:id', (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;
