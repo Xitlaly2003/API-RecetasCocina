@@ -10,7 +10,7 @@ const pool = mysql.createPool({
   connectionLimit: 50,          // Número máximo de conexiones en el pool
   queueLimit: 0,                // Número máximo de consultas en la cola (0 significa sin límite)
   ssl: {
-    rejectUnauthorized: true    // Habilitar SSL
+    rejectUnauthorized: false    // Habilitar SSL
   }
 });
 
