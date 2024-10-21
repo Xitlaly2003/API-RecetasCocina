@@ -1,11 +1,14 @@
-import { Router } from 'express';
-import * as authCtrl from '../controllers/auth.controller';
-import { verifyToken, isAdmin } from '../middlewares/authJwt';
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/auth.controller');
 
-const router = Router();
+// Ruta para registrar un usuario
+router.post('/register', authController.register);
 
-router.post('/signup', authCtrl.signUp);
-router.post('/signin', authCtrl.signIn);
-router.get('/me', authCtrl.getUserInfo);
+// Ruta para iniciar sesión
+router.post('/login', authController.login);
 
-export default router;
+// Ruta para verificar el correo
+router.get('/verify/:confirmationCode', authController.verify);
+
+module.exports = router;
