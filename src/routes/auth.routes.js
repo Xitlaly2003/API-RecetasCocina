@@ -11,9 +11,4 @@ router.post('/login', authController.login);
 // Ruta para verificar el correo
 router.get('/verify/:confirmationCode', authController.verify);
 
-// Ruta para servir la SPA
-app.get('/', (req, res) => {
-    res.send('auth');
-});
-
 export default router;
