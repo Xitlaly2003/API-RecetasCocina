@@ -2,11 +2,9 @@ import { Router } from 'express';
 import db from '../models/Db.model';  // Importar la conexión de la base de datos (pool)
 const router = Router();
 
-// Obtener eventos del mes actual
-router.get('/events/month', (req, res) => {
-  const { id_usuario } = req.query;  // Suponiendo que el usuario está autenticado y envía su id
-  const month = new Date().getMonth() + 1;
-  const year = new Date().getFullYear();
+// Obtener todos los eventos
+router.get('/events', (req, res) => {
+  const { id_usuario } = req.query; // Suponiendo que el usuario está autenticado y envía su id
   
   // Usar el pool para obtener una conexión
   db.getConnection((err, connection) => {
@@ -18,10 +16,8 @@ router.get('/events/month', (req, res) => {
       SELECT e.*, f.fecha 
       FROM eventos e
       LEFT JOIN fechas_evento f ON e.id = f.id_evento
-      WHERE (e.id_usuario = ? OR e.e_global = TRUE)
-      AND MONTH(f.fecha) = ? 
-      AND YEAR(f.fecha) = ?`, 
-      [id_usuario, month, year],
+      WHERE (e.id_usuario = ? OR e.e_global = TRUE)`,
+      [id_usuario],
       (error, results) => {
         connection.release(); // Liberar conexión después de usarla
         if (error) {
