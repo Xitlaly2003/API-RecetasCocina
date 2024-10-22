@@ -2,9 +2,9 @@ import { Router } from 'express';
 import db from '../models/Db.model';  // Importar la conexión de la base de datos (pool)
 const router = Router();
 
-// Obtener todos los eventos
+// Obtener todos los eventos con fechas agrupadas en un array
 router.get('/events', (req, res) => {
-  const { id_usuario } = req.query; // Suponiendo que el usuario está autenticado y envía su id
+  const { id_usuario } = req.query;
   
   // Usar el pool para obtener una conexión
   db.getConnection((err, connection) => {
@@ -13,17 +13,25 @@ router.get('/events', (req, res) => {
     }
 
     connection.query(`
-      SELECT e.*, f.fecha 
+      SELECT e.*, GROUP_CONCAT(f.fecha) AS fechas 
       FROM eventos e
       LEFT JOIN fechas_evento f ON e.id = f.id_evento
-      WHERE (e.id_usuario = ? OR e.e_global = TRUE)`,
+      WHERE (e.id_usuario = ? OR e.e_global = TRUE)
+      GROUP BY e.id`,
       [id_usuario],
       (error, results) => {
         connection.release(); // Liberar conexión después de usarla
         if (error) {
           return res.status(500).json({ message: 'Error al obtener eventos', error });
         }
-        res.json(results);
+        
+        // Procesar resultados para convertir las fechas en un array
+        const eventosConFechas = results.map(evento => ({
+          ...evento,
+          fechas: evento.fechas ? evento.fechas.split(',') : [] // Convertir cadena a array
+        }));
+
+        res.json(eventosConFechas);
       }
     );
   });
