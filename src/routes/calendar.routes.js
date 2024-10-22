@@ -15,11 +15,13 @@ router.get('/events/month', (req, res) => {
     }
 
     connection.query(`
-      SELECT * FROM eventos_calendario
-      WHERE MONTH(fecha_inicio) = ? 
-      AND YEAR(fecha_inicio) = ? 
-      AND id_usuario = ?`, 
-      [month, year, id_usuario],
+      SELECT e.*, f.fecha 
+      FROM eventos e
+      LEFT JOIN fechas_evento f ON e.id = f.id_evento
+      WHERE (e.id_usuario = ? OR e.e_global = TRUE)
+      AND MONTH(f.fecha) = ? 
+      AND YEAR(f.fecha) = ?`, 
+      [id_usuario, month, year],
       (error, results) => {
         connection.release(); // Liberar conexión después de usarla
         if (error) {
@@ -33,7 +35,7 @@ router.get('/events/month', (req, res) => {
 
 // Crear un nuevo evento
 router.post('/events', (req, res) => {
-  const { id_usuario, titulo, descripcion, fecha_inicio, fecha_fin, tipo } = req.body;
+  const { id_usuario, titulo, descripcion, fechas, e_global } = req.body; // 'fechas' es un array de fechas
 
   db.getConnection((err, connection) => {
     if (err) {
@@ -41,28 +43,33 @@ router.post('/events', (req, res) => {
     }
 
     connection.query(`
-      INSERT INTO eventos_calendario (id_usuario, titulo, descripcion, fecha_inicio, fecha_fin, tipo)
-      VALUES (?, ?, ?, ?, ?, ?)`,
-      [id_usuario, titulo, descripcion, fecha_inicio, fecha_fin, tipo],
+      INSERT INTO eventos (id_usuario, titulo, descripcion, e_global)
+      VALUES (?, ?, ?, ?)`,
+      [id_usuario, titulo, descripcion, e_global],
       (error, result) => {
         if (error) {
           connection.release(); // Liberar conexión en caso de error
           return res.status(500).json({ message: 'Error al crear evento', error });
         }
 
-        // Insertar una notificación
-        connection.query(`
-          INSERT INTO notificaciones (id_usuario, titulo, mensaje, tipo)
-          VALUES (?, ?, ?, 'evento')`,
-          [id_usuario, `Nuevo evento: ${titulo}`, `Tienes un nuevo evento llamado "${titulo}" el ${fecha_inicio}`],
-          (error) => {
-            connection.release(); // Liberar conexión después de usarla
-            if (error) {
-              return res.status(500).json({ message: 'Error al crear notificación', error });
-            }
-            res.status(201).json({ message: 'Evento creado exitosamente', eventId: result.insertId });
-          }
-        );
+        const eventId = result.insertId;
+
+        // Insertar fechas
+        const fechaValues = fechas.map(fecha => [eventId, fecha]); // Formato adecuado para la inserción
+        if (fechaValues.length > 0) {
+          connection.query(`
+            INSERT INTO fechas_evento (id_evento, fecha)
+            VALUES ?`, [fechaValues], (error) => {
+              connection.release(); // Liberar conexión después de usarla
+              if (error) {
+                return res.status(500).json({ message: 'Error al crear fechas del evento', error });
+              }
+              res.status(201).json({ message: 'Evento creado exitosamente', eventId });
+            });
+        } else {
+          connection.release(); // Liberar conexión si no hay fechas
+          res.status(201).json({ message: 'Evento creado exitosamente sin fechas', eventId });
+        }
       }
     );
   });
@@ -71,7 +78,7 @@ router.post('/events', (req, res) => {
 // Actualizar un evento
 router.put('/events/:id', (req, res) => {
   const { id } = req.params;
-  const { titulo, descripcion, fecha_inicio, fecha_fin, tipo } = req.body;
+  const { titulo, descripcion, e_global } = req.body;
 
   db.getConnection((err, connection) => {
     if (err) {
@@ -79,10 +86,10 @@ router.put('/events/:id', (req, res) => {
     }
 
     connection.query(`
-      UPDATE eventos_calendario
-      SET titulo = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, tipo = ?
+      UPDATE eventos
+      SET titulo = ?, descripcion = ?, e_global = ?
       WHERE id = ?`,
-      [titulo, descripcion, fecha_inicio, fecha_fin, tipo, id],
+      [titulo, descripcion, e_global, id],
       (error) => {
         connection.release(); // Liberar conexión después de usarla
         if (error) {
@@ -103,12 +110,20 @@ router.delete('/events/:id', (req, res) => {
       return res.status(500).json({ message: 'Error al obtener conexión', error: err });
     }
 
-    connection.query(`DELETE FROM eventos_calendario WHERE id = ?`, [id], (error) => {
-      connection.release(); // Liberar conexión después de usarla
+    connection.query(`DELETE FROM eventos WHERE id = ?`, [id], (error) => {
       if (error) {
+        connection.release(); // Liberar conexión en caso de error
         return res.status(500).json({ message: 'Error al eliminar evento', error });
       }
-      res.json({ message: 'Evento eliminado exitosamente' });
+
+      // Eliminar las fechas del evento
+      connection.query(`DELETE FROM fechas_evento WHERE id_evento = ?`, [id], (error) => {
+        connection.release(); // Liberar conexión después de usarla
+        if (error) {
+          return res.status(500).json({ message: 'Error al eliminar fechas del evento', error });
+        }
+        res.json({ message: 'Evento y sus fechas eliminados exitosamente' });
+      });
     });
   });
 });
