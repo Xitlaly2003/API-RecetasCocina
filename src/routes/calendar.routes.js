@@ -1,24 +1,17 @@
 // calendar.routes.js
 import { Router } from 'express';
-import {
-  getEvents,
-  createEvent,
-  updateEvent,
-  deleteEvent
-} from '../controllers/calendar.controller'; // Importar las funciones del controlador
+const calendarController = require('../controllers/calendar.controller');
 
 const router = Router();
 
-// Obtener todos los eventos
-router.get('/events', getEvents);
+router.get('/:user', calendarController.getEvents);
 
-// Crear un nuevo evento
-router.post('/events', createEvent);
+router.get('/Details/:date/:user', calendarController.getEventsByDayAndUser);
+// Ruta para agregar un evento por usuario
+router.post('/AddEvent', calendarController.addNewEvent);
+// Ruta para editar un evento por id y usuario
+router.put('/UpdateEventById', calendarController.updateEvent);
+// Ruta para eliminar un evento por id
+router.delete('/DeleteEventById/:id', calendarController.deleteEvent);
 
-// Actualizar un evento
-router.put('/events/:id', updateEvent);
-
-// Eliminar un evento
-router.delete('/events/:id', deleteEvent);
-
-export default router;
+module.exports = router;

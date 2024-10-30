@@ -1,131 +1,87 @@
-// calendar.controller.js
-import db from '../models/Db.model'; // Importar la conexión de la base de datos (pool)
+const Calendar = require('../models/Calendar.model');
 
-// Obtener todos los eventos con fechas agrupadas en un array
-export const getEvents = (req, res) => {
-  const { id_usuario } = req.query;
-
-  db.getConnection((err, connection) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error al obtener conexión', error: err });
-    }
-
-    connection.query(`
-      SELECT e.*, GROUP_CONCAT(f.fecha) AS fechas 
-      FROM eventos e
-      LEFT JOIN fechas_evento f ON e.id = f.id_evento
-      WHERE (e.id_usuario = ? OR e.e_global = TRUE)
-      GROUP BY e.id`,
-      [id_usuario],
-      (error, results) => {
-        connection.release(); // Liberar conexión después de usarla
-        if (error) {
-          return res.status(500).json({ message: 'Error al obtener eventos', error });
+//Obtener todos los eventos incluyendo del usuario si esta logeado
+exports.getEvents = async (req, res) => {
+  const { user } = req.params;
+    Calendar.findAllEvents(user, (err, results) => {
+        if (err) {
+          return; 
         }
-
-        // Procesar resultados para convertir las fechas en un array
-        const eventosConFechas = results.map(evento => ({
-          ...evento,
-          fechas: evento.fechas ? evento.fechas.split(',') : [] // Convertir cadena a array
-        }));
-
-        res.json(eventosConFechas);
-      }
-    );
-  });
-};
-
-// Crear un nuevo evento
-export const createEvent = (req, res) => {
-  const { id_usuario, titulo, descripcion, fechas, e_global } = req.body; // 'fechas' es un array de fechas
-
-  db.getConnection((err, connection) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error al obtener conexión', error: err });
-    }
-
-    connection.query(`
-      INSERT INTO eventos (id_usuario, titulo, descripcion, e_global)
-      VALUES (?, ?, ?, ?)`,
-      [id_usuario, titulo, descripcion, e_global],
-      (error, result) => {
-        if (error) {
-          connection.release(); // Liberar conexión en caso de error
-          return res.status(500).json({ message: 'Error al crear evento', error });
-        }
-
-        const eventId = result.insertId;
-
-        // Insertar fechas
-        const fechaValues = fechas.map(fecha => [eventId, fecha]); // Formato adecuado para la inserción
-        if (fechaValues.length > 0) {
-          connection.query(`
-            INSERT INTO fechas_evento (id_evento, fecha)
-            VALUES ?`, [fechaValues], (error) => {
-              connection.release(); // Liberar conexión después de usarla
-              if (error) {
-                return res.status(500).json({ message: 'Error al crear fechas del evento', error });
-              }
-              res.status(201).json({ message: 'Evento creado exitosamente', eventId });
-            });
-        } else {
-          connection.release(); // Liberar conexión si no hay fechas
-          res.status(201).json({ message: 'Evento creado exitosamente sin fechas', eventId });
-        }
-      }
-    );
-  });
-};
-
-// Actualizar un evento
-export const updateEvent = (req, res) => {
-  const { id } = req.params;
-  const { titulo, descripcion, e_global } = req.body;
-
-  db.getConnection((err, connection) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error al obtener conexión', error: err });
-    }
-
-    connection.query(`
-      UPDATE eventos
-      SET titulo = ?, descripcion = ?, e_global = ?
-      WHERE id = ?`,
-      [titulo, descripcion, e_global, id],
-      (error) => {
-        connection.release(); // Liberar conexión después de usarla
-        if (error) {
-          return res.status(500).json({ message: 'Error al actualizar evento', error });
-        }
-        res.json({ message: 'Evento actualizado exitosamente' });
-      }
-    );
-  });
-};
-
-// Eliminar un evento
-export const deleteEvent = (req, res) => {
-  const { id } = req.params;
-
-  db.getConnection((err, connection) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error al obtener conexión', error: err });
-    }
-
-    connection.query(`DELETE FROM eventos WHERE id = ?`, [id], (error) => {
-      if (error) {
-        connection.release(); // Liberar conexión en caso de error
-        return res.status(500).json({ message: 'Error al eliminar evento', error });
-      }
-
-      // Eliminar las fechas del evento
-      connection.query(`DELETE FROM fechas_evento WHERE id_evento = ?`, [id], (error) => {
-        connection.release(); // Liberar conexión después de usarla
-        if (error) {
-          return res.status(500).json({ message: 'Error al eliminar fechas del evento', error });
-        }
-        res.json({ message: 'Evento y sus fechas eliminados exitosamente' });
+         
+        res.json(results);
       });
+
+}
+
+//Obtener todos los eventos de la fecha seleccionada y usuario logueado
+exports.getEventsByDayAndUser = async (req, res) => {
+  const { date, user } = req.params;
+  Calendar.findEventsByDayAndUser(date, user, (err, results) => {
+      if (err) {
+        return;
+      }
+      
+      res.json(results);
     });
+
+}
+
+//Agregar un evento del usuario
+exports.addNewEvent = async (req, res) => {
+  const { id_usuario, nombre_evento, descripcion, fecha_inicio, fecha_fin } = req.body;
+  if (!id_usuario || !nombre_evento || !fecha_inicio) {
+    return res.status(400).send({ message: 'Todos los campos son obligatorios.' });
+  }
+  var color = '#0F5B95'; //Por el momento es estatico
+  var relleno = 7; //Para la forma que tendra en la vista del calendario
+  var display = 'sn'; //Como es un evento del usuario es SN (sin display)
+  var textColor = '#ffffff';
+  Calendar.createAnEvent({id_usuario, nombre_evento, descripcion, fecha_inicio, fecha_fin, color, relleno, display, textColor}, (err, eventId) => {
+    if (err) {
+      return res.status(500).send({ message: 'Error al registrar evento.', error: err });
+    }
+    res.status(201).json({ message: 'Evento agregado exitosamente', id: eventId });
+  });
+
+}
+
+
+// Editar un evento por id
+exports.updateEvent = async (req, res) => {
+  const { id, id_usuario, nombre_evento, descripcion, fecha_inicio, fecha_fin } = req.body;
+
+  if (!id || !id_usuario || !nombre_evento || !fecha_inicio) {
+      return res.status(400).send({ message: 'Todos los campos son obligatorios.' });
+  }
+
+  const updatedEventData = {
+      id,
+      id_usuario,
+      nombre_evento,
+      descripcion,
+      fecha_inicio,
+      fecha_fin,
+      color: '#0F5B95', // Por el momento, default
+      relleno: 7, // Para la vista del calendario
+      display: 'sn', // Evento de usuario
+      textColor: '#ffffff'
+  };
+
+  Calendar.updateEvent(updatedEventData, (err) => {
+      if (err) {
+          return res.status(500).send({ message: 'Error al actualizar evento.', error: err });
+      }
+      res.json({ message: 'Evento actualizado exitosamente' });
+  });
+};
+
+// Eliminar un evento por id
+exports.deleteEvent = async (req, res) => {
+  const { id } = req.params;
+  Calendar.deleteEvent(id, (err) => {
+      if (err) {
+          return res.status(500).send({ message: 'Error al eliminar evento.', error: err });
+      }
+      res.json({ message: 'Evento eliminado exitosamente' });
   });
 };
