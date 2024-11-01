@@ -19,7 +19,12 @@ SELECT
     FROM 
         usuario_eventos as uf 
     WHERE 
-       id_usuario = ? ORDER BY relleno ASC `;
+       id_usuario = ? ORDER BY 
+    CASE 
+        WHEN end = '0000-00-00' THEN 1
+        ELSE 0 
+    END ASC,
+    relleno ASC `;
        pool.query(sql, [user], (err, results) => {
       if (err) {
         return callback(err); 
