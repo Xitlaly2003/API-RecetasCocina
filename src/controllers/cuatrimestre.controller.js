@@ -2,7 +2,7 @@ import db from '../models/Db.model';  // Importar la conexión de la base de dat
 
 // Obtener todos los cuatrimestres de un usuario
 export const getCuatrimestres = (req, res) => {
-  const { id_usuario } = req.query;
+  const { id_usuario } = req.params;
 
   db.getConnection((err, connection) => {
     if (err) {
@@ -74,24 +74,28 @@ export const getCuatrimestre = (req, res) => {
 
 // Eliminar un cuatrimestre específico de un usuario
 export const deleteCuatrimestre = (req, res) => {
-  const { cuatrimestre_id, id_usuario } = req.params;
-
-  db.getConnection((err, connection) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error al obtener conexión', error: err });
-    }
-
-    connection.query(`
-      DELETE FROM cuatrimestres
-      WHERE id = ? AND id_usuario = ?`,
-      [cuatrimestre_id, id_usuario],
-      (error) => {
-        connection.release(); // Liberar conexión después de usarla
-        if (error) {
-          return res.status(500).json({ message: 'Error al eliminar el cuatrimestre', error });
-        }
-        res.json({ message: 'Cuatrimestre eliminado exitosamente' });
+    const { cuatrimestre_id, id_usuario } = req.params;
+  
+    db.getConnection((err, connection) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error al obtener conexión', error: err });
       }
-    );
-  });
+  
+      connection.query(`
+        DELETE FROM cuatrimestres
+        WHERE id = ? AND id_usuario = ?`,
+        [cuatrimestre_id, id_usuario],
+        (error, result) => {
+          connection.release(); // Liberar conexión después de usarla
+          if (error) {
+            return res.status(500).json({ message: 'Error al eliminar el cuatrimestre', error });
+          }
+          // Verificar si se eliminó alguna fila
+          if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Cuatrimestre no encontrado o no eliminado' });
+          }
+          res.json({ message: 'Cuatrimestre eliminado exitosamente' });
+        }
+      );
+    });  
 };
