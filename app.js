@@ -9,11 +9,17 @@ const photoRoutes = require('./src/routes/photo.routes');
 const app = express();
 const cors = require('cors');
 
-// Middleware para parsear cuerpos de solicitud como JSON
-app.use(express.json());
+// Configuración de CORS para permitir peticiones desde localhost
+const corsOptions = {
+    origin: 'http://localhost:8100',  // Permite solo solicitudes desde este dominio
+    methods: ['GET', 'POST'],        // Permite métodos GET y POST
+    allowedHeaders: ['Content-Type', 'Authorization'], // Permite ciertos encabezados
+  };
 
 // Middleware para habilitar CORS (si es necesario)
-app.use(cors());
+app.use(cors(corsOptions));
+// Middleware para parsear cuerpos de solicitud como JSON
+app.use(express.json());
 
 // Conectar a la base de datos
 connectDB();
