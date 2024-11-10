@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { savePhoto, getAllPhotos } = require('../controllers/photoController');
+const { savePhoto, getAllPhotos } = require('../controllers/photo.controller');
 
 // Ruta para guardar una foto
 router.post('/photos', savePhoto);
