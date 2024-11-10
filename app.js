@@ -1,4 +1,5 @@
 import express from 'express';
+const bodyParser = require('body-parser');
 import authRoutes from './src/routes/auth.routes';
 import calendarRoutes from './src/routes/calendar.routes';
 import mapaRoutes from './src/routes/mapa.routes';
@@ -8,6 +9,10 @@ const photoRoutes = require('./src/routes/photo.routes');
 
 const app = express();
 const cors = require('cors');
+
+// Configura el tamaño máximo de la carga (aquí está configurado a 10MB, pero puedes ajustarlo)
+app.use(bodyParser.json({ limit: '20mb' }));
+app.use(bodyParser.urlencoded({ limit: '20mb', extended: true }));
 
 // Configuración de CORS para permitir peticiones desde localhost
 const corsOptions = {
