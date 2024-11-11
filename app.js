@@ -32,7 +32,7 @@ app.use('/api/photo', photoRoutes);
 
 // Ruta para servir la SPA
 app.get('/', (req, res) => {
-    res.send('MobUTEQ API');
+    res.send('Recetas API');
 });
 
 export default app;
