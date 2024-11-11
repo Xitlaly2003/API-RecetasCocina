@@ -28,7 +28,7 @@ connectDB();
 
 app.use(express.json());
 app.use('/api', authRoutes);
-app.use('/api/photo', photoRoutes);
+app.use('/photo', photoRoutes);
 
 // Ruta para servir la SPA
 app.get('/', (req, res) => {
