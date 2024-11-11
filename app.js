@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({ limit: '20mb', extended: true }));
 // Configuración de CORS para permitir peticiones desde localhost
 const corsOptions = {
     origin: 'http://localhost:8100',  // Permite solo solicitudes desde este dominio
-    methods: ['GET', 'POST'],        // Permite métodos GET y POST
+    methods: ['GET', 'POST', 'DELETE'],        // Permite métodos GET y POST
     allowedHeaders: ['Content-Type', 'Authorization'], // Permite ciertos encabezados
   };
 
