@@ -35,7 +35,24 @@ const getAllPhotos = async (req, res) => {
   }
 };
 
+// Eliminar una foto
+const deletePhoto = async (req, res) => {
+  const { photoId } = req.params;
+
+  try {
+    const deletedPhoto = await Photo.findByIdAndDelete(photoId);
+    if (!deletedPhoto) {
+      return res.status(404).json({ message: 'Foto no encontrada' });
+    }
+    res.status(200).json({ message: 'Foto eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error al eliminar la foto:', error);
+    res.status(500).json({ message: 'Error al eliminar la foto' });
+  }
+};
+
 module.exports = {
   savePhoto,
   getAllPhotos,
+  deletePhoto,
 };
