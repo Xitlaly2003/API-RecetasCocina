@@ -1,6 +1,6 @@
 import app from "../app";
 import dotenv from "dotenv";
-const db = require('./models/Db.model'); // Conexión a la base de datos
+const db = require('./models/Db.model'); // Conexión a la base de datoss
 
 dotenv.config();
 app.listen(3000, '0.0.0.0', () =>{
